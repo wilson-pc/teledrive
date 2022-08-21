@@ -6,6 +6,7 @@ import base64url from 'base64url'
 import JSCookie from 'js-cookie'
 import React, { useEffect, useState } from 'react'
 import { useThemeSwitcher } from 'react-css-theme-switcher'
+import OtpInput from 'react-otp-input'
 import QRCode from 'react-qr-code'
 import { useHistory } from 'react-router'
 import useSWRImmutable from 'swr/immutable'
@@ -517,6 +518,14 @@ const Login: React.FC<Props> = ({ me }) => {
                     <Typography.Paragraph type="secondary">
                       Authentication code sent to <b>+{phoneData.code}&bull;&bull;&bull;&bull;&bull;&bull;&bull;{phoneData.phone?.substring(phoneData.phone.length - 4)}</b>
                     </Typography.Paragraph>
+                    <OtpInput numInputs={5} value={otp as string || ''} onChange={setOtp} isInputNum containerStyle={{ justifyContent: 'center' }} inputStyle={{
+                      width: '2.7rem',
+                      height: '2.7rem',
+                      margin: '0 0.3rem 1rem 0',
+                      borderRadius: '4px',
+                      fontSize: '1.2rem',
+                      background: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.04)' : undefined,
+                      border: '1px solid rgba(0, 0, 0, 0.3)' }} />
                     {countdown ? <Typography.Paragraph type="secondary">Re-send in {countdown}s...</Typography.Paragraph> : <Typography.Paragraph>
                       <Button type="link" onClick={() => sendCode()}>Re-send code</Button>
                     </Typography.Paragraph>}
