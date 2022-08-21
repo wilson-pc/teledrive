@@ -15,7 +15,7 @@ import {
   TeamOutlined,
   VideoCameraOutlined
 } from '@ant-design/icons'
-import { Descriptions, Menu, Modal, Table, Tag, Typography } from 'antd'
+import { Descriptions, Image, Menu, Modal, Table, Tag, Typography } from 'antd'
 import { SorterResult } from 'antd/lib/table/interface'
 import moment from 'moment'
 import prettyBytes from 'pretty-bytes'
@@ -95,11 +95,15 @@ const TableFiles: React.FC<Props> = ({
     })
   }, [selected, action])
 
-  const Icon = ({ type }: { type: string }) => {
+  const Icon = ({ type,url }: { type: string,url: string }) => {
     if (type === 'image') {
       return <FileImageOutlined />
     } else if (type === 'video') {
-      return <VideoCameraOutlined />
+      return<Image
+        width={100}
+        height={70}
+        src={url}
+      />
     } else if (type === 'document') {
       return <FilePdfOutlined />
     } else if (type === 'folder') {
@@ -217,7 +221,7 @@ const TableFiles: React.FC<Props> = ({
         }
 
         return <>
-          {row.link_id ? <BranchesOutlined /> : '' } {type} <Icon type={row.type} /> {row.name?.replace(/\.part0*\d+$/, '')}
+          {row.link_id ? <BranchesOutlined /> : '' } {type} <Icon type={row.type} url={row.thumbnail} /> {row.duration +'-\n'+ row.name?.replace(/\.part0*\d+$/, '') }
         </>
       }
     },
@@ -341,7 +345,7 @@ const TableFiles: React.FC<Props> = ({
         } : undefined} />
     </DndProvider>
     <ContextMenu />
-    <Modal title={<Typography.Text ellipsis><Icon type={showDetails?.type} /> {showDetails?.name.replace(/\.part0*\d+$/, '')}</Typography.Text>}
+    <Modal title={<Typography.Text ellipsis><Icon type={showDetails?.type}  url={showDetails?.thumbnail}/> {showDetails?.name.replace(/\.part0*\d+$/, '')}</Typography.Text>}
       visible={Boolean(showDetails)}
       onCancel={() => setShowDetails(undefined)}
       okText="View"

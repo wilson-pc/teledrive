@@ -1,10 +1,8 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- CreateTable
 CREATE TABLE "config" (
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
+    "id" UUID NOT NULL,
     "invitation_code" VARCHAR,
     "disable_signup" BOOLEAN NOT NULL DEFAULT false,
     "allow_server_storage_use" BOOLEAN NOT NULL DEFAULT false,
@@ -16,7 +14,7 @@ CREATE TABLE "config" (
 CREATE TABLE "files" (
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
+    "id" UUID NOT NULL,
     "name" VARCHAR NOT NULL,
     "type" VARCHAR,
     "message_id" VARCHAR,
@@ -32,6 +30,7 @@ CREATE TABLE "files" (
     "file_id" VARCHAR,
     "link_id" UUID,
     "forward_info" VARCHAR,
+    "password" VARCHAR,
 
     CONSTRAINT "PK_6c16b9093a142e0e7613b04a3d9" PRIMARY KEY ("id")
 );
@@ -60,7 +59,7 @@ CREATE TABLE "usages" (
 CREATE TABLE "users" (
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
+    "id" UUID NOT NULL,
     "username" VARCHAR NOT NULL,
     "name" VARCHAR,
     "email" VARCHAR,
@@ -76,7 +75,7 @@ CREATE TABLE "users" (
 CREATE TABLE "waitings" (
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "id" UUID NOT NULL DEFAULT uuid_generate_v4(),
+    "id" UUID NOT NULL,
     "email" VARCHAR NOT NULL,
 
     CONSTRAINT "PK_f0cfe98441cf0fb92db66ae71c4" PRIMARY KEY ("id")

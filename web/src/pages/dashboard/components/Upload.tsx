@@ -6,7 +6,60 @@ import { Api } from 'teledrive-client'
 import { CHUNK_SIZE, MAX_UPLOAD_SIZE, RETRY_COUNT } from '../../../utils/Constant'
 import { req } from '../../../utils/Fetcher'
 import { telegramClient } from '../../../utils/Telegram'
+async function dataURLtoBlob(dataurl) {
+  const base64 = await fetch(dataurl)
+  return  base64.blob()
+}
 
+function generateVideoThumbnail(file, seekTo = 0.0): any {
+  return new Promise((resolve, reject) => {
+    // load the file to a video player
+    const videoPlayer = document.createElement('video')
+    videoPlayer.setAttribute('src', URL.createObjectURL(file))
+    videoPlayer.load()
+    videoPlayer.addEventListener('error', (ex) => {
+      reject(ex)
+    })
+    // load metadata of the video to get video duration and dimensions
+    videoPlayer.addEventListener('loadedmetadata', () => {
+      // seek to user defined timestamp (in seconds) if possible
+      if (videoPlayer.duration < seekTo) {
+        reject('video is too short.')
+        return
+      }
+      // delay seeking or else 'seeked' event won't fire on Safari
+      setTimeout(() => {
+        videoPlayer.currentTime = seekTo
+      }, 200)
+      // extract video thumbnail once seeking is complete
+      //
+      const totalSeconds=  videoPlayer.duration % 60
+      const minutes = videoPlayer.duration/ 60
+      // 👇️ get remainder of seconds
+      const seconds = totalSeconds % 60
+
+      function padTo2Digits(num) {
+        return num.toString().padStart(2, '0')
+      }
+
+      // ✅ format as MM:SS
+      const result = `${padTo2Digits(parseInt(minutes.toString()))}:${padTo2Digits(parseInt(seconds.toString()))}`
+      //
+      videoPlayer.addEventListener('seeked', () => {
+        console.log('video is now paused at %ss.', seekTo)
+        // define a canvas to have the same dimension as the video
+        const canvas = document.createElement('canvas')
+        canvas.width = videoPlayer.videoWidth
+        canvas.height = videoPlayer.videoHeight
+        // draw the video frame to canvas
+        const ctx = canvas.getContext('2d')
+        ctx?.drawImage(videoPlayer, 0, 0, canvas.width, canvas.height)
+        // return the canvas image as a blob
+        return resolve({ canva:canvas.toDataURL(),duration:result })
+      })
+    })
+  })
+}
 interface Props {
   dataFileList: [any[], (data: any[]) => void],
   parent?: Record<string, any> | null,
@@ -77,6 +130,16 @@ const Upload: React.FC<Props> = ({ dataFileList: [fileList, setFileList], parent
       const responses: any[] = []
       let totalParts: number = 0
       const totalAllParts = Math.ceil(file.size % MAX_UPLOAD_SIZE / CHUNK_SIZE) + (fileParts - 1) * Math.ceil(MAX_UPLOAD_SIZE / CHUNK_SIZE)
+      let db: any = {}
+      if(file.type.includes('video')){
+        const imageDta = new FormData()
+        const { canva,duration }= await generateVideoThumbnail(file,8)
+        const blod= await dataURLtoBlob(canva)
+        imageDta.append('file', blod)
+        const { data }  = await req.post('/files/upload-cover',imageDta)
+        db=data
+        db.duration= duration
+      }
 
       if (localStorage.getItem('experimental')) {
         let client = await telegramClient.connect()
@@ -109,6 +172,8 @@ const Upload: React.FC<Props> = ({ dataFileList: [fileList, setFileList], parent
                     mime_type: file.type || mime.lookup(file.name) || 'application/octet-stream',
                     part: i,
                     total_part: parts,
+                    thumbnail : db.url,
+                    duration:db.duration
                   })
 
                   // upload per part
@@ -215,7 +280,9 @@ const Upload: React.FC<Props> = ({ dataFileList: [fileList, setFileList], parent
               } else {
                 const blobPart = fileBlob.slice(i * CHUNK_SIZE, Math.min(i * CHUNK_SIZE + CHUNK_SIZE, file.size))
                 const data = new FormData()
+
                 data.append('upload', blobPart)
+                console.log(db)
 
                 const beginUpload = async () => {
                   const { data: response } = await req.post(`/files/upload${i > 0 && responses[j]?.file?.id ? `/${responses[j]?.file.id}` : ''}`, data, {
@@ -227,6 +294,8 @@ const Upload: React.FC<Props> = ({ dataFileList: [fileList, setFileList], parent
                       mime_type: file.type || mime.lookup(file.name) || 'application/octet-stream',
                       part: i,
                       total_part: parts,
+                      thumbnail : db.url,
+                      duration:db.duration
                     },
                   })
                   return response

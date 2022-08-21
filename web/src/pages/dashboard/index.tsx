@@ -41,7 +41,7 @@ interface PageProps extends RouteComponentProps<{
 }> {}
 
 const Dashboard: React.FC<PageProps & { me?: any, errorMe?: any }> = ({ match }) => {
-  const PAGE_SIZE = 10
+  const PAGE_SIZE = 100
 
   const history = useHistory()
   const location = useLocation()
@@ -429,8 +429,8 @@ const Dashboard: React.FC<PageProps & { me?: any, errorMe?: any }> = ({ match })
                   // const searchParams = new URLSearchParams(window.location.search)
                   // searchParams.set('view', row.id)
                   // history.push(`${window.location.pathname}?${searchParams.toString()}`)
-                  window.open(`${window.location.origin}/view/${row.id}`, '_blank')
-
+                //  window.open(`${window.location.origin}/view/${row.id}`, '_blank')
+                  history.push(`/view/${row.id}`)
                   // setCollapsedView(row.id)
                 }
               }}

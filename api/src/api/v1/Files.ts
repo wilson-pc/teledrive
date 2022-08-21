@@ -5,6 +5,7 @@ import checkDiskSpace from 'check-disk-space'
 import contentDisposition from 'content-disposition'
 import { AES, enc } from 'crypto-js'
 import { Request, Response } from 'express'
+import FormData from 'form-data'
 import { appendFileSync, createReadStream, existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'fs'
 import moment from 'moment'
 import multer from 'multer'
@@ -17,6 +18,7 @@ import { CACHE_FILES_LIMIT, CONNECTION_RETRIES, FILES_JWT_SECRET, TG_CREDS } fro
 import { buildSort } from '../../utils/FilterQuery'
 import { Endpoint } from '../base/Endpoint'
 import { Auth, AuthMaybe } from '../middlewares/Auth'
+import axios from 'axios'
 
 const CACHE_DIR = `${__dirname}/../../../../.cached`
 
@@ -91,7 +93,10 @@ export class Files {
           parent_id: true,
           uploaded_at: true,
           created_at: true,
-          password: true
+          password: true,
+          thumbnail:true,
+          duration:true,
+          original_url:true,
         }
       }
       if (shared && Object.keys(where).length) {
@@ -527,9 +532,26 @@ export class Files {
     return res.send({ file: { id } })
   }
 
+  @Endpoint.POST('/upload-cover', { middlewares: [Auth, multer().single('file')] })
+  public async uploadCover(req: Request, res: Response): Promise<any> {
+    const file = req.file
+
+
+    const form = new FormData()
+    form.append('file', file.buffer,'gato.jpg')
+    const requestConfig = {
+      headers: {
+        ...form.getHeaders()
+      }
+    }
+
+    const { data } = await axios.post('https://telegra.ph/upload', form, requestConfig)
+
+    return res.status(202).send({ url:`https://telegra.ph${data[0].src}` })
+  }
   @Endpoint.POST('/upload/:id?', { middlewares: [Auth, multer().single('upload')] })
   public async upload(req: Request, res: Response): Promise<any> {
-    const { name, size, mime_type: mimetype, parent_id: parentId, relative_path: relativePath, total_part: totalPart, part } = req.query as Record<string, string>
+    const { name, size, mime_type: mimetype, parent_id: parentId, relative_path: relativePath, total_part: totalPart, part,thumbnail,duration } = req.query as Record<string, string>
 
     if (!name || !size || !mimetype || !part || !totalPart) {
       throw { status: 400, body: { error: 'Name, size, mimetype, part, and total part are required' } }
@@ -634,6 +656,8 @@ export class Files {
             upload_progress: 0,
             file_id: bigInt.randBetween('-1e100', '1e100').toString(),
             forward_info: (req.user.settings as Prisma.JsonObject)?.saved_location as string || null,
+            thumbnail: thumbnail,
+            duration:duration,
           }
         })
       }
@@ -744,7 +768,9 @@ export class Files {
       relative_path: relativePath,
       total_part: totalPart,
       part,
-      message
+      message,
+      thumbnail,
+      duration
     } = req.body as Record<string, any>
 
     let model: files
@@ -840,6 +866,8 @@ export class Files {
               upload_progress: 0,
               file_id: bigInt.randBetween('-1e100', '1e100').toString(),
               forward_info: (req.user.settings as Prisma.JsonObject)?.saved_location as string || null,
+              thumbnail: thumbnail,
+              duration:duration,
             }
           })
         }
