@@ -27,6 +27,7 @@ export class Files {
 
   @Endpoint.GET('/', { middlewares: [AuthMaybe] })
   public async find(req: Request, res: Response): Promise<any> {
+    console.log(req.query,req.params)
     const { sort, offset, limit, shared, exclude_parts: excludeParts, full_properties: fullProperties, no_cache: noCache, t: _t, ...filters } = req.query
     const parent = filters?.parent_id && filters.parent_id !== 'null' ? await prisma.files.findFirst({ where: { id: filters.parent_id as string } }) : null
     if (filters?.parent_id && filters.parent_id !== 'null' && !parent) {
@@ -195,6 +196,19 @@ export class Files {
       }
     })
   }
+
+  @Endpoint.GET('/exist/:id')
+  public async Exist(req: Request, res: Response): Promise<any> {
+    const  originalUrl =req.params.id
+    const file = await prisma.files.findFirst({ where:{ original_url:originalUrl } })
+
+    if(file){
+      res.send({ exist:true })
+    }else{
+      res.send({ exist:false })
+    }
+  }
+
 
   @Endpoint.POST('/', { middlewares: [Auth] })
   public async save(req: Request, res: Response): Promise<any> {
@@ -549,6 +563,27 @@ export class Files {
 
     return res.status(202).send({ url:`https://telegra.ph${data[0].src}` })
   }
+  @Endpoint.POST('/file-data')
+  public async fileData(req: Request, res: Response): Promise<any> {
+    const file = req.body
+    console.log(file)
+    const fileSaved = await prisma.files.create({ data:{
+      name: file.name,
+      mime_type: file.mime_type,
+      size: Number(file. size),
+      user_id: file.user_id,
+      type: file.type,
+      message_id: file.message_id,
+      parent_id: file.currentParentId || null,
+      file_id: bigInt.randBetween('-1e100', '1e100').toString(),
+      original_url:file.original_url,
+      thumbnail:file.thumbnail,
+      forward_info: file.forward_info,
+      uploaded_at:new Date(),
+      duration:file.duration, } })
+    return res.status(202).send(fileSaved)
+  }
+
   @Endpoint.POST('/upload/:id?', { middlewares: [Auth, multer().single('upload')] })
   public async upload(req: Request, res: Response): Promise<any> {
     const { name, size, mime_type: mimetype, parent_id: parentId, relative_path: relativePath, total_part: totalPart, part,thumbnail,duration } = req.query as Record<string, string>
@@ -757,6 +792,8 @@ export class Files {
 
     return res.status(202).send({ accepted: true, file: { id: model.id } })
   }
+
+
 
   @Endpoint.POST('/uploadBeta/:id?', { middlewares: [Auth] })
   public async uploadBeta(req: Request, res: Response): Promise<any> {
